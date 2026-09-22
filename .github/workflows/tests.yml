@@ -44,8 +44,11 @@ jobs:
       - name: Lint
         run: ruff check .
 
-      - name: Run database migrations
-        run: alembic upgrade head
+      - name: Test database migrations
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
 
       - name: Verify migration state
         run: alembic current
