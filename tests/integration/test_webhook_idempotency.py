@@ -6,7 +6,9 @@ from app.models.payment import PaymentStatus
 from app.models.plan import BillingPeriod, Plan
 from app.schemas.webhook import PaymentWebhook
 from app.services.payment import PaymentService
-from app.services.subscription import SubscriptionService
+from app.services.subscription import (
+    SubscriptionService,
+)
 from app.services.webhook import WebhookService
 
 
@@ -49,8 +51,9 @@ async def test_duplicate_webhook_is_not_processed_twice() -> None:
         payment = await PaymentService(
             session
         ).charge_subscription(
-            subscription.id,
-            "webhook-payment",
+            customer_id=customer.id,
+            subscription_id=subscription.id,
+            idempotency_key="webhook-payment",
         )
 
         event = PaymentWebhook(
