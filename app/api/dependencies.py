@@ -2,7 +2,7 @@ from typing import Annotated
 
 import jwt
 from fastapi import Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, AuthorizationError
@@ -11,8 +11,8 @@ from app.db.session import get_db_session
 from app.models.customer import Customer, CustomerRole
 from app.repositories.customer import CustomerRepository
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/v1/auth/login"
+bearer_scheme = HTTPBearer(
+    auto_error=False,
 )
 
 DbSession = Annotated[
@@ -23,13 +23,25 @@ DbSession = Annotated[
 
 async def get_current_customer(
     session: DbSession,
-    token: Annotated[
-        str,
-        Depends(oauth2_scheme),
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Depends(bearer_scheme),
     ],
 ) -> Customer:
+    if credentials is None:
+        raise AuthenticationError(
+            "Authentication credentials are required."
+        )
+
+    if credentials.scheme.lower() != "bearer":
+        raise AuthenticationError(
+            "Bearer authentication is required."
+        )
+
     try:
-        customer_id = decode_access_token(token)
+        customer_id = decode_access_token(
+            credentials.credentials
+        )
     except (
         jwt.InvalidTokenError,
         ValueError,
