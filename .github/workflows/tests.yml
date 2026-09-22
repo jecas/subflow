@@ -50,5 +50,11 @@ jobs:
       - name: Verify migration state
         run: alembic current
 
-      - name: Run tests
-        run: pytest -v
+      - name: Run unit tests
+        run: |
+          pytest -v \
+            --ignore=tests/integration
+
+      - name: Run integration tests
+        run: |
+          pytest -v tests/integration
