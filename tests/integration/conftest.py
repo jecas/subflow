@@ -13,6 +13,7 @@ async def clean_test_state():
         await connection.execute(
             text(
                 "TRUNCATE TABLE "
+                "webhook_events, payments, "
                 "subscriptions, customers, plans "
                 "RESTART IDENTITY CASCADE"
             )
@@ -26,6 +27,7 @@ async def clean_test_state():
         await connection.execute(
             text(
                 "TRUNCATE TABLE "
+                "webhook_events, payments, "
                 "subscriptions, customers, plans "
                 "RESTART IDENTITY CASCADE"
             )
