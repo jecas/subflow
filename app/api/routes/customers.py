@@ -1,14 +1,7 @@
 from fastapi import APIRouter
 
-from app.api.dependencies import (
-    CurrentCustomer,
-    DbSession,
-)
-from app.schemas.customer import (
-    CustomerResponse,
-    CustomerUpdate,
-)
-
+from app.api.dependencies import CurrentCustomer, DbSession
+from app.schemas.customer import CustomerResponse, CustomerUpdate
 
 router = APIRouter(
     prefix="/customers",
