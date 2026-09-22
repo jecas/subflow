@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from uuid import UUID
 
 import jwt
@@ -21,7 +21,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
 def create_access_token(subject: UUID) -> str:
     settings = get_settings()
 
-    expires_at = datetime.now(timezone.utc) + timedelta(
+    expires_at = datetime.now(UTC) + timedelta(
         minutes=settings.access_token_expire_minutes
     )
 
