@@ -13,7 +13,7 @@ class Settings(BaseSettings):
         "postgresql+asyncpg://subflow:subflow@localhost:5432/subflow"
     )
     redis_url: str = "redis://localhost:6379/0"
-    plans_cache_ttl_secodns: int = 300
+    plans_cache_ttl_seconds: int = 300
 
     jwt_secret_key: str = "change-me-in-production"
     jwt_algorithm: str = "HS256"
