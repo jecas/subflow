@@ -1,14 +1,9 @@
 from fastapi import APIRouter, status
 
 from app.api.dependencies import DbSession
-from app.schemas.auth import (
-    LoginRequest,
-    RegisterRequest,
-    TokenResponse,
-)
+from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
 from app.schemas.customer import CustomerResponse
 from app.services.auth import AuthService
-
 
 router = APIRouter(
     prefix="/auth",
