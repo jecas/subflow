@@ -2,28 +2,58 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import (
-    ConflictError,
-    NotFoundError,
-)
+from app.cache.plan import PlanCache
+from app.core.exceptions import NotFoundError
 from app.models.plan import Plan
 from app.repositories.plan import PlanRepository
-from app.schemas.plan import PlanCreate, PlanUpdate
+from app.schemas.plan import PlanCreate, PlanResponse, PlanUpdate
 
 
 class PlanService:
     def __init__(self, session: AsyncSession):
         self.session = session
-        self.plans = PlanRepository(session)
+        self.repository = PlanRepository(session)
+        self.cache = PlanCache()
 
-    async def list_active(self) -> list[Plan]:
-        return await self.plans.list_active()
+    async def list_active(
+        self,
+    ) -> list[PlanResponse]:
+        cached = await self.cache.get()
 
-    async def get(self, plan_id: UUID) -> Plan:
-        plan = await self.plans.get(plan_id)
+        if cached is not None:
+            return [
+                PlanResponse.model_validate(plan)
+                for plan in cached
+            ]
 
-        if plan is None:
-            raise NotFoundError("Plan not found.")
+        plans = await self.repository.list_active()
+
+        responses = [
+            PlanResponse.model_validate(plan)
+            for plan in plans
+        ]
+
+        await self.cache.set(
+            [
+                response.model_dump(
+                    mode="json"
+                )
+                for response in responses
+            ]
+        )
+
+        return responses
+
+    async def get(
+        self,
+        plan_id: UUID,
+    ) -> Plan:
+        plan = await self.repository.get(plan_id)
+
+        if plan is None or not plan.is_active:
+            raise NotFoundError(
+                "Active plan not found."
+            )
 
         return plan
 
@@ -31,21 +61,16 @@ class PlanService:
         self,
         data: PlanCreate,
     ) -> Plan:
-        existing = await self.plans.get_by_name(
-            data.name
+        plan = Plan(
+            **data.model_dump()
         )
 
-        if existing:
-            raise ConflictError(
-                "A plan with this name already exists."
-            )
-
-        plan = Plan(**data.model_dump())
-
-        self.plans.add(plan)
+        self.repository.add(plan)
 
         await self.session.commit()
         await self.session.refresh(plan)
+
+        await self.cache.invalidate()
 
         return plan
 
@@ -54,14 +79,23 @@ class PlanService:
         plan_id: UUID,
         data: PlanUpdate,
     ) -> Plan:
-        plan = await self.get(plan_id)
+        plan = await self.repository.get(plan_id)
 
-        for field, value in data.model_dump(
+        if plan is None:
+            raise NotFoundError(
+                "Plan not found."
+            )
+
+        updates = data.model_dump(
             exclude_unset=True
-        ).items():
+        )
+
+        for field, value in updates.items():
             setattr(plan, field, value)
 
         await self.session.commit()
         await self.session.refresh(plan)
+
+        await self.cache.invalidate()
 
         return plan
