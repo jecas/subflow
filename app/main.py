@@ -1,14 +1,22 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from contextlib import asynccontextmanager
 
 from app.api.routes import admin, auth, customers, health, plans, subscriptions
 from app.core.config import get_settings
 from app.core.exceptions import SubFlowError
+from app.core.redis import close_redis
 
 settings = get_settings()
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    await close_redis()
+
 app = FastAPI(
     title=settings.app_name,
+    lifespan=lifespan,
     version=settings.app_version,
     description=(
         "Subscription management API for customers, "
