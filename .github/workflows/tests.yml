@@ -8,6 +8,25 @@ jobs:
   test:
     runs-on: ubuntu-24.04
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: subflow
+          POSTGRES_PASSWORD: subflow
+          POSTGRES_DB: subflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U subflow -d subflow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://subflow:subflow@localhost:5432/subflow
+      JWT_SECRET_KEY: ci-test-secret-key
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +43,12 @@ jobs:
 
       - name: Lint
         run: ruff check .
+
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Verify migration state
+        run: alembic current
 
       - name: Run tests
         run: pytest -v
