@@ -10,6 +10,10 @@ class SubscriptionCreate(BaseModel):
     plan_id: UUID
 
 
+class SubscriptionChangePlan(BaseModel):
+    plan_id: UUID
+
+
 class SubscriptionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
