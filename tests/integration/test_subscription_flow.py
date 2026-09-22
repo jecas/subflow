@@ -20,7 +20,7 @@ async def test_complete_subscription_flow() -> None:
         register_response = await client.post(
             "/api/v1/auth/register",
             json={
-                "email": "admin@subflow.test",
+                "email": "admin@example.com",
                 "password": "StrongPassword123!",
                 "first_name": "SubFlow",
                 "last_name": "Admin",
@@ -48,12 +48,12 @@ async def test_complete_subscription_flow() -> None:
         login_response = await client.post(
             "/api/v1/auth/login",
             json={
-                "email": "admin@subflow.test",
+                "email": "admin@example.com",
                 "password": "StrongPassword123!",
             },
         )
 
-        assert login_response.status_code == 200
+        assert login_response.status_code == 200, login_response.text
 
         login_data = login_response.json()
 
