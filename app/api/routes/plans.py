@@ -6,7 +6,6 @@ from app.api.dependencies import DbSession
 from app.schemas.plan import PlanResponse
 from app.services.plan import PlanService
 
-
 router = APIRouter(
     prefix="/plans",
     tags=["plans"],
