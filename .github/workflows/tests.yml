@@ -37,7 +37,8 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://subflow:subflow@localhost:5432/subflow
       JWT_SECRET_KEY: subflow-ci-test-secret-key-at-least-32-bytes-long
       REDIS_URL: redis://localhost:6379/0
-    
+      PAYMENT_WEBHOOK_SECRET: subflow-ci-webhook-secret
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -72,3 +73,6 @@ jobs:
       - name: Run integration tests
         run: |
           pytest -v tests/integration
+
+      - name: Build Docker image
+        run: docker build -t subflow:test .
