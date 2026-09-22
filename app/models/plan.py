@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from decimal import Decimal
 from enum import StrEnum
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -55,6 +54,6 @@ class Plan(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    subscriptions: Mapped[list["Subscription"]] = relationship(
+    subscriptions: Mapped[list[Subscription]] = relationship(
         back_populates="plan",
     )
