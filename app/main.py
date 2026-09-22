@@ -1,6 +1,6 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
 
 from app.api.routes import admin, auth, customers, health, plans, subscriptions
 from app.core.config import get_settings
