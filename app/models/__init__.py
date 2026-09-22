@@ -3,10 +3,10 @@ from app.models.plan import BillingPeriod, Plan
 from app.models.subscription import Subscription, SubscriptionStatus
 
 __all__ = [
+    "BillingPeriod",
     "Customer",
     "CustomerRole",
     "Plan",
-    "BillingPeriod",
     "Subscription",
     "SubscriptionStatus",
 ]
