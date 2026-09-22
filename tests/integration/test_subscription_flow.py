@@ -1,152 +1,220 @@
-from uuid import UUID
+from datetime import UTC, datetime
 
 import pytest
-from httpx import ASGITransport, AsyncClient
-from sqlalchemy import update
 
 from app.db.session import AsyncSessionFactory
-from app.main import app
 from app.models.customer import Customer, CustomerRole
+from app.models.plan import BillingPeriod, Plan
+from app.models.subscription import (
+    Subscription,
+    SubscriptionStatus,
+)
+from app.services.subscription import SubscriptionService
 
 
 @pytest.mark.asyncio
-async def test_complete_subscription_flow() -> None:
-    transport = ASGITransport(app=app)
-
-    async with AsyncClient(
-        transport=transport,
-        base_url="http://test",
-    ) as client:
-        register_response = await client.post(
-            "/api/v1/auth/register",
-            json={
-                "email": "admin@example.com",
-                "password": "StrongPassword123!",
-                "first_name": "SubFlow",
-                "last_name": "Admin",
-            },
+async def test_change_plan_renew_and_expire() -> None:
+    async with AsyncSessionFactory() as session:
+        customer = Customer(
+            email="lifecycle@example.com",
+            password_hash="not-used",
+            first_name="Life",
+            last_name="Cycle",
+            role=CustomerRole.CUSTOMER,
         )
 
-        assert register_response.status_code == 201, register_response.text
-
-        registered_customer = register_response.json()
-
-        assert registered_customer["email"] == "admin@example.com"
-
-        customer_id = UUID(
-            registered_customer["id"]
+        monthly = Plan(
+            name="Monthly",
+            price="10.00",
+            currency="EUR",
+            billing_period=BillingPeriod.MONTHLY,
         )
 
-        async with AsyncSessionFactory() as session:
-            await session.execute(
-                update(Customer)
-                .where(Customer.id == customer_id)
-                .values(role=CustomerRole.ADMIN)
-            )
-            await session.commit()
-
-        login_response = await client.post(
-            "/api/v1/auth/login",
-            json={
-                "email": "admin@example.com",
-                "password": "StrongPassword123!",
-            },
+        yearly = Plan(
+            name="Yearly",
+            price="100.00",
+            currency="EUR",
+            billing_period=BillingPeriod.YEARLY,
         )
 
-        assert login_response.status_code == 200, login_response.text
-
-        login_data = login_response.json()
-
-        assert login_data["access_token"]
-        assert login_data["token_type"] == "bearer"
-
-        headers = {
-            "Authorization": (
-                f"Bearer {login_data['access_token']}"
-            )
-        }
-
-        create_plan_response = await client.post(
-            "/api/v1/admin/plans",
-            headers=headers,
-            json={
-                "name": "Pro",
-                "description": "Professional subscription plan",
-                "price": "29.99",
-                "currency": "EUR",
-                "billing_period": "monthly",
-            },
+        session.add_all(
+            [
+                customer,
+                monthly,
+                yearly,
+            ]
         )
 
-        assert create_plan_response.status_code == 201
+        await session.commit()
 
-        plan = create_plan_response.json()
+        await session.refresh(customer)
+        await session.refresh(monthly)
+        await session.refresh(yearly)
 
-        assert plan["name"] == "Pro"
-        assert plan["price"] == "29.99"
-        assert plan["billing_period"] == "monthly"
-        assert plan["is_active"] is True
+        service = SubscriptionService(session)
 
-        plan_id = plan["id"]
-
-        plans_response = await client.get(
-            "/api/v1/plans"
+        subscription = await service.create(
+            customer.id,
+            monthly.id,
         )
 
-        assert plans_response.status_code == 200
-
-        plans = plans_response.json()
-
-        assert len(plans) == 1
-        assert plans[0]["id"] == plan_id
-
-        subscription_response = await client.post(
-            "/api/v1/subscriptions",
-            headers=headers,
-            json={
-                "plan_id": plan_id,
-            },
+        changed = await service.change_plan(
+            customer.id,
+            subscription.id,
+            yearly.id,
         )
 
-        assert subscription_response.status_code == 201
+        assert changed.plan_id == yearly.id
 
-        subscription = subscription_response.json()
+        old_period_end = changed.current_period_end
 
-        assert subscription["plan_id"] == plan_id
-        assert subscription["customer_id"] == str(
-            customer_id
+        renewed = await service.renew(
+            changed.id
         )
-        assert subscription["status"] == "active"
-        assert subscription["cancel_at_period_end"] is False
-
-        subscription_id = subscription["id"]
-
-        my_subscriptions_response = await client.get(
-            "/api/v1/subscriptions/me",
-            headers=headers,
-        )
-
-        assert my_subscriptions_response.status_code == 200
-
-        subscriptions = my_subscriptions_response.json()
-
-        assert len(subscriptions) == 1
-        assert subscriptions[0]["id"] == subscription_id
-
-        cancel_response = await client.post(
-            (
-                "/api/v1/subscriptions/"
-                f"{subscription_id}/cancel"
-            ),
-            headers=headers,
-        )
-
-        assert cancel_response.status_code == 200
-
-        canceled_subscription = cancel_response.json()
 
         assert (
-            canceled_subscription["cancel_at_period_end"]
+            renewed.status
+            == SubscriptionStatus.ACTIVE
+        )
+
+        assert (
+            renewed.current_period_end
+            > old_period_end
+        )
+
+        expired = await service.expire(
+            renewed.id
+        )
+
+        assert (
+            expired.status
+            == SubscriptionStatus.EXPIRED
+        )
+
+
+@pytest.mark.asyncio
+async def test_cancel_at_period_end_becomes_canceled_on_renewal() -> None:
+    async with AsyncSessionFactory() as session:
+        customer = Customer(
+            email="cancel@example.com",
+            password_hash="not-used",
+            first_name="Cancel",
+            last_name="Test",
+        )
+
+        plan = Plan(
+            name="Cancel Plan",
+            price="15.00",
+            currency="EUR",
+            billing_period=BillingPeriod.MONTHLY,
+        )
+
+        session.add_all(
+            [
+                customer,
+                plan,
+            ]
+        )
+
+        await session.commit()
+
+        await session.refresh(customer)
+        await session.refresh(plan)
+
+        service = SubscriptionService(session)
+
+        subscription = await service.create(
+            customer.id,
+            plan.id,
+        )
+
+        canceled_later = await service.cancel(
+            customer.id,
+            subscription.id,
+        )
+
+        assert (
+            canceled_later.cancel_at_period_end
             is True
         )
-        assert canceled_subscription["status"] == "active"
+
+        assert (
+            canceled_later.status
+            == SubscriptionStatus.ACTIVE
+        )
+
+        processed = await service.renew(
+            subscription.id
+        )
+
+        assert (
+            processed.status
+            == SubscriptionStatus.CANCELED
+        )
+
+
+@pytest.mark.asyncio
+async def test_january_31_monthly_subscription_uses_calendar_month() -> None:
+    async with AsyncSessionFactory() as session:
+        customer = Customer(
+            email="calendar@example.com",
+            password_hash="not-used",
+            first_name="Calendar",
+            last_name="Test",
+        )
+
+        plan = Plan(
+            name="Calendar Plan",
+            price="12.00",
+            currency="EUR",
+            billing_period=BillingPeriod.MONTHLY,
+        )
+
+        session.add_all(
+            [
+                customer,
+                plan,
+            ]
+        )
+
+        await session.commit()
+
+        await session.refresh(customer)
+        await session.refresh(plan)
+
+        subscription = Subscription(
+            customer_id=customer.id,
+            plan_id=plan.id,
+            status=SubscriptionStatus.ACTIVE,
+            started_at=datetime(
+                2026,
+                1,
+                31,
+                tzinfo=UTC,
+            ),
+            current_period_end=datetime(
+                2026,
+                1,
+                31,
+                tzinfo=UTC,
+            ),
+        )
+
+        session.add(subscription)
+
+        await session.commit()
+        await session.refresh(subscription)
+
+        renewed = await SubscriptionService(
+            session
+        ).renew(subscription.id)
+
+        assert (
+            renewed.current_period_end
+            == datetime(
+                2026,
+                2,
+                28,
+                tzinfo=UTC,
+            )
+        )
