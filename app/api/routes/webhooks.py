@@ -1,12 +1,8 @@
 from fastapi import APIRouter
 
 from app.api.dependencies import DbSession
-from app.schemas.webhook import (
-    PaymentWebhook,
-    WebhookResponse,
-)
+from app.schemas.webhook import PaymentWebhook, WebhookResponse
 from app.services.webhook import WebhookService
-
 
 router = APIRouter(
     prefix="/webhooks",
