@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey
@@ -62,10 +61,10 @@ class Subscription(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
 
-    customer: Mapped["Customer"] = relationship(
+    customer: Mapped[Customer] = relationship(
         back_populates="subscriptions",
     )
 
-    plan: Mapped["Plan"] = relationship(
+    plan: Mapped[Plan] = relationship(
         back_populates="subscriptions",
     )
