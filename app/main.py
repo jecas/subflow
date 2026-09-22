@@ -1,17 +1,9 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.api.routes import (
-    admin,
-    auth,
-    customers,
-    health,
-    plans,
-    subscriptions,
-)
+from app.api.routes import admin, auth, customers, health, plans, subscriptions
 from app.core.config import get_settings
 from app.core.exceptions import SubFlowError
-
 
 settings = get_settings()
 
@@ -30,18 +22,22 @@ app.include_router(
     auth.router,
     prefix=settings.api_prefix,
 )
+
 app.include_router(
     customers.router,
     prefix=settings.api_prefix,
 )
+
 app.include_router(
     plans.router,
     prefix=settings.api_prefix,
 )
+
 app.include_router(
     subscriptions.router,
     prefix=settings.api_prefix,
 )
+
 app.include_router(
     admin.router,
     prefix=settings.api_prefix,
