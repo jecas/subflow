@@ -25,4 +25,5 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "duration_ms": duration_ms,
             },
         )
+
         return response

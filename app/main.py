@@ -3,17 +3,31 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from app.api.routes import admin, auth, customers, health, plans, subscriptions
+from app.api.routes import (
+    admin,
+    auth,
+    customers,
+    health,
+    plans,
+    subscriptions,
+    webhooks,
+)
 from app.core.config import get_settings
 from app.core.exceptions import SubFlowError
+from app.core.logging import configure_logging
+from app.core.middleware import RequestLoggingMiddleware
 from app.core.redis import close_redis
 
 settings = get_settings()
 
+configure_logging()
+
+
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_: FastAPI):
     yield
     await close_redis()
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -21,36 +35,30 @@ app = FastAPI(
     version=settings.app_version,
     description=(
         "Subscription management API for customers, "
-        "plans and recurring subscriptions."
+        "plans, recurring subscriptions and payments."
     ),
 )
 
-app.include_router(health.router)
+app.add_middleware(
+    RequestLoggingMiddleware
+)
 
 app.include_router(
+    health.router
+)
+
+for router in (
     auth.router,
-    prefix=settings.api_prefix,
-)
-
-app.include_router(
     customers.router,
-    prefix=settings.api_prefix,
-)
-
-app.include_router(
     plans.router,
-    prefix=settings.api_prefix,
-)
-
-app.include_router(
     subscriptions.router,
-    prefix=settings.api_prefix,
-)
-
-app.include_router(
     admin.router,
-    prefix=settings.api_prefix,
-)
+    webhooks.router,
+):
+    app.include_router(
+        router,
+        prefix=settings.api_prefix,
+    )
 
 
 @app.exception_handler(SubFlowError)
