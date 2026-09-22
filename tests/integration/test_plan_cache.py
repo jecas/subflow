@@ -5,9 +5,9 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import update
 
 from app.core.redis import redis_client
+from app.db.session import AsyncSessionFactory
 from app.main import app
 from app.models.customer import Customer, CustomerRole
-from app.db.session import AsyncSessionFactory
 
 
 @pytest.mark.asyncio
