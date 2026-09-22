@@ -1,3 +1,8 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+
 [project]
 name = "subflow"
 version = "1.0.0"
@@ -18,6 +23,7 @@ dependencies = [
     "uvicorn[standard]>=0.32,<1",
 ]
 
+
 [project.optional-dependencies]
 dev = [
     "httpx>=0.27,<1",
@@ -26,9 +32,16 @@ dev = [
     "ruff>=0.8,<1",
 ]
 
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+exclude = ["alembic*", "tests*"]
+
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+
 
 [tool.ruff]
 line-length = 120
