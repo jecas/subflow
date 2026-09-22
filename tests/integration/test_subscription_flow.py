@@ -31,7 +31,7 @@ async def test_complete_subscription_flow() -> None:
 
         registered_customer = register_response.json()
 
-        assert registered_customer["email"] == "admin@subflow.test"
+        assert registered_customer["email"] == "admin@example.com"
 
         customer_id = UUID(
             registered_customer["id"]
