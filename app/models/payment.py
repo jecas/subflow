@@ -25,12 +25,30 @@ class Payment(UUIDMixin, TimestampMixin, Base):
         nullable=False,
         index=True,
     )
-    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        nullable=False,
+    )
+    currency: Mapped[str] = mapped_column(
+        String(3),
+        nullable=False,
+    )
     status: Mapped[PaymentStatus] = mapped_column(
         Enum(PaymentStatus),
         default=PaymentStatus.PENDING,
         nullable=False,
     )
-    provider_payment_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
-    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    provider_payment_id: Mapped[str] = mapped_column(
+        String(100),
+        unique=True,
+        nullable=False,
+    )
+    idempotency_key: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+    )
+    paid_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
