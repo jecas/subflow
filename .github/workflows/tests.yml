@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: subflow
+          POSTGRES_PASSWORD: subflow
+          POSTGRES_DB: subflow
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U subflow -d subflow"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://subflow:subflow@localhost:5432/subflow
+      JWT_SECRET_KEY: subflow-ci-test-secret-key-at-least-32-bytes-long
+      REDIS_URL: redis://localhost:6379/0
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Test database migrations
+        run: |
+          alembic upgrade head
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: Verify migration state
+        run: alembic current
+
+      - name: Run unit tests
+        run: |
+          pytest -v \
+            --ignore=tests/integration
+
+      - name: Run integration tests
+        run: |
+          pytest -v tests/integration

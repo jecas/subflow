@@ -1,0 +1,51 @@
+services:
+
+  api:
+    build: .
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app
+             --host 0.0.0.0
+             --port 8000
+             --reload"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://subflow:subflow@postgres:5432/subflow
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET_KEY: local-development-secret
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: subflow
+      POSTGRES_USER: subflow
+      POSTGRES_PASSWORD: subflow
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U subflow -d subflow"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:
