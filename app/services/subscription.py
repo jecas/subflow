@@ -1,21 +1,13 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import (
-    ConflictError,
-    NotFoundError,
-)
+from app.core.exceptions import ConflictError, NotFoundError
 from app.models.plan import BillingPeriod
-from app.models.subscription import (
-    Subscription,
-    SubscriptionStatus,
-)
+from app.models.subscription import Subscription, SubscriptionStatus
 from app.repositories.plan import PlanRepository
-from app.repositories.subscription import (
-    SubscriptionRepository,
-)
+from app.repositories.subscription import SubscriptionRepository
 
 
 class SubscriptionService:
@@ -48,7 +40,7 @@ class SubscriptionService:
                 "Customer already has an active subscription."
             )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         if plan.billing_period == BillingPeriod.MONTHLY:
             period = timedelta(days=30)
