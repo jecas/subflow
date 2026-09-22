@@ -2,18 +2,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from app.api.dependencies import (
-    CurrentCustomer,
-    DbSession,
-)
-from app.schemas.subscription import (
-    SubscriptionCreate,
-    SubscriptionResponse,
-)
-from app.services.subscription import (
-    SubscriptionService,
-)
-
+from app.api.dependencies import CurrentCustomer, DbSession
+from app.schemas.subscription import SubscriptionCreate, SubscriptionResponse
+from app.services.subscription import SubscriptionService
 
 router = APIRouter(
     prefix="/subscriptions",
