@@ -2,27 +2,13 @@ from uuid import UUID
 
 from fastapi import APIRouter, status
 
-from app.api.dependencies import (
-    AdminCustomer,
-    DbSession,
-)
-from app.repositories.customer import (
-    CustomerRepository,
-)
-from app.repositories.subscription import (
-    SubscriptionRepository,
-)
+from app.api.dependencies import AdminCustomer, DbSession
+from app.repositories.customer import CustomerRepository
+from app.repositories.subscription import SubscriptionRepository
 from app.schemas.customer import CustomerResponse
-from app.schemas.plan import (
-    PlanCreate,
-    PlanResponse,
-    PlanUpdate,
-)
-from app.schemas.subscription import (
-    SubscriptionResponse,
-)
+from app.schemas.plan import PlanCreate, PlanResponse, PlanUpdate
+from app.schemas.subscription import SubscriptionResponse
 from app.services.plan import PlanService
-
 
 router = APIRouter(
     prefix="/admin",
