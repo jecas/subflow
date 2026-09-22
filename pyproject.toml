@@ -1,17 +1,21 @@
 [project]
 name = "subflow"
-version = "0.1.0"
+version = "1.0.0"
 description = "Subscription management backend for customers, plans and recurring subscriptions."
+readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "fastapi>=0.115,<1",
-    "pydantic-settings>=2.6,<3",
-    "uvicorn[standard]>=0.32,<1",
-
-    "sqlalchemy>=2.0,<3",
-    "asyncpg>=0.30,<1",
     "alembic>=1.14,<2",
+    "asyncpg>=0.30,<1",
+    "email-validator>=2.2,<3",
+    "fastapi>=0.115,<1",
+    "pwdlib[argon2]>=0.2,<1",
+    "pydantic-settings>=2.6,<3",
+    "pyjwt>=2.10,<3",
+    "redis>=5,<7",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn[standard]>=0.32,<1",
 ]
 
 [project.optional-dependencies]
