@@ -1,4 +1,5 @@
 # SubFlow
+[![Tests](https://github.com/jecas/subflow/actions/workflows/tests.yml/badge.svg)](https://github.com/jecas/subflow/actions/workflows/tests.yml)
 
 SubFlow is a production-style asynchronous subscription management backend built with Python and FastAPI.
 
